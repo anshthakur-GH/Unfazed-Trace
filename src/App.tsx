@@ -94,7 +94,7 @@ function App() {
           className="rounded-lg px-2 py-1 text-xs"
           style={{ color: "var(--text-muted)" }}
         >
-          Review
+          History
         </button>
       </header>
 
@@ -165,7 +165,7 @@ function App() {
 
       {showTodaysReview && daySummary && (
         <Suspense fallback={null}>
-          <TodaysReview summary={daySummary} onClose={() => setShowTodaysReview(false)} />
+          <TodaysReview todaySummary={daySummary} onClose={() => setShowTodaysReview(false)} />
         </Suspense>
       )}
     </main>

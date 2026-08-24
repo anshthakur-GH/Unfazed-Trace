@@ -24,6 +24,8 @@ export const api = {
     invoke<Task>("complete_task", { id, notes }),
   addNote: (note: NewNoteInput) => invoke<Note>("add_note", { note }),
   getDaySummary: () => invoke<DaySummary>("get_day_summary"),
+  getDayReview: (date: string) => invoke<DaySummary>("get_day_review", { date }),
+  listHistoryDates: () => invoke<string[]>("list_history_dates"),
 };
 
 /** Rust's `AppError` shape, surfaced as the `invoke()` rejection payload. */

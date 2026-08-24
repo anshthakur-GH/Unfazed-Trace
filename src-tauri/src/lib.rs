@@ -123,6 +123,8 @@ pub fn run() {
             commands::timer::complete_task,
             commands::notes::add_note,
             commands::summary::get_day_summary,
+            commands::summary::get_day_review,
+            commands::summary::list_history_dates,
         ])
         .setup(|app| {
             #[cfg(windows)]
