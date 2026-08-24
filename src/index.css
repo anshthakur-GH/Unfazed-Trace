@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+/* Theme tokens — near-black surfaces, white text, one orange accent (Architecture §8.1). */
+:root {
+  --bg: #0e0f11; /* app background, near-black charcoal */
+  --surface: #17181b; /* cards / panels */
+  --surface-2: #202226; /* raised elements, inputs */
+  --border: #2a2c31;
+  --text: #ffffff; /* primary text / timer digits */
+  --text-muted: #9aa0a6; /* secondary labels, disabled */
+  --accent: #f97316; /* orange — the single primary action per screen */
+  --accent-hover: #fb8b3c;
+  --accent-ink: #111214; /* text on orange, for AA contrast */
+  --danger: #ef4444;
+  --success: #22c55e;
+  --radius: 12px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* App-like shell: no text selection or drag on chrome. */
+  user-select: none;
+}
+
+/* Tabular numerals for anything that ticks (timer digits) so glyphs don't jitter. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
