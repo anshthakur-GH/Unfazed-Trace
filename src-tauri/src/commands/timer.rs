@@ -90,9 +90,9 @@ pub fn start_task(app: AppHandle, db: State<Db>, id: i64) -> Result<Task, AppErr
     Ok(result)
 }
 
-#[tauri::command]
-pub fn pause_task(app: AppHandle, db: State<Db>, id: i64) -> Result<Task, AppError> {
-    let mut conn = db.lock().map_err(|_| AppError::new("Internal lock error."))?;
+/// Transaction-only body of "pause the active task". Shared by the `pause_task` IPC command
+/// and the tray's "Pause current" menu item, which has no IPC/window involved.
+pub(crate) fn pause_task_tx(conn: &mut Connection, id: i64) -> Result<(), AppError> {
     let now = Utc::now().to_rfc3339();
     let tx = conn.transaction()?;
 
@@ -110,6 +110,13 @@ pub fn pause_task(app: AppHandle, db: State<Db>, id: i64) -> Result<Task, AppErr
     tx.execute("UPDATE tasks SET status = 'paused' WHERE id = ?1", [id])?;
 
     tx.commit()?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn pause_task(app: AppHandle, db: State<Db>, id: i64) -> Result<Task, AppError> {
+    let mut conn = db.lock().map_err(|_| AppError::new("Internal lock error."))?;
+    pause_task_tx(&mut conn, id)?;
     let result = fetch_task(&conn, id)?;
     drop(conn);
     notify_state_changed(&app);

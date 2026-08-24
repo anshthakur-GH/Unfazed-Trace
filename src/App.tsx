@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { ReviewDialog } from "./components/ReviewDialog";
 import { TaskEditorModal } from "./components/TaskEditorModal";
 import { TaskRow } from "./components/TaskRow";
 import { TodayCounter } from "./components/TodayCounter";
 import type { Task } from "./lib/types";
 import { useStore } from "./store/useStore";
+
+// Lazy-loaded: the review/export screen isn't needed on the widget's default cold-start path.
+const TodaysReview = lazy(() => import("./screens/TodaysReview"));
 
 function Section({ label, tasks, actions }: {
   label: string;
@@ -50,6 +53,7 @@ function App() {
   // undefined = closed, null = creating a new task, Task = editing that task.
   const [editorTask, setEditorTask] = useState<Task | null | undefined>(undefined);
   const [reviewTask, setReviewTask] = useState<Task | null>(null);
+  const [showTodaysReview, setShowTodaysReview] = useState(false);
 
   useEffect(() => {
     void init();
@@ -84,6 +88,14 @@ function App() {
           fetchedAtMs={daySummaryFetchedAtMs}
           activeTask={activeTask}
         />
+        <button
+          type="button"
+          onClick={() => setShowTodaysReview(true)}
+          className="rounded-lg px-2 py-1 text-xs"
+          style={{ color: "var(--text-muted)" }}
+        >
+          Review
+        </button>
       </header>
 
       {error && (
@@ -149,6 +161,12 @@ function App() {
             setReviewTask(null);
           }}
         />
+      )}
+
+      {showTodaysReview && daySummary && (
+        <Suspense fallback={null}>
+          <TodaysReview summary={daySummary} onClose={() => setShowTodaysReview(false)} />
+        </Suspense>
       )}
     </main>
   );
