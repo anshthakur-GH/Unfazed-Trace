@@ -4,7 +4,7 @@ import { TimerDigits } from "./TimerDigits";
 interface MiniTimerProps {
   task: Task;
   onExpand: () => void;
-  /** Retained for callers; the compact pill itself has no controls — click to expand for those. */
+  /** Retained for callers; the compact pill itself has no controls — double-click to expand. */
   onPause: (id: number) => void;
   onStop: (task: Task) => void;
 }
@@ -17,16 +17,26 @@ interface MiniTimerProps {
  * The whole pill is a native drag region. `data-tauri-drag-region="deep"` is required (not
  * "true") -- Tauri only treats a drag-region element as active when it is the *exact* element
  * under the cursor; "deep" extends that to the whole subtree, so dragging works no matter which
- * child (digits, caption) you actually click on. Tauri's drag handling swallows the click that
- * would normally follow a plain mousedown+mouseup on a drag region, so "expand" lives on its own
- * small button in the corner instead of "click anywhere" -- buttons are excluded from drag by
- * Tauri itself, so it stays reliably clickable no matter how the rest of the pill is dragged.
+ * child (digits, caption) you actually click on.
+ *
+ * Double-click expands back to the full window. Tauri's own drag-region handling treats a
+ * double-click on a drag region as "toggle maximize" (Windows/Linux) and swallows the event
+ * before it can bubble to a normal onDoubleClick -- so this intercepts it in the CAPTURE phase
+ * (which runs before Tauri's document-level bubble-phase listener) and stops it from
+ * propagating any further, substituting our own expand action for the native toggle-maximize.
  */
 export function MiniTimer({ task, onExpand }: MiniTimerProps) {
   return (
     <div
       data-tauri-drag-region="deep"
-      title="Drag to move"
+      title="Drag to move · double-click to expand"
+      onMouseDownCapture={(e) => {
+        if (e.button === 0 && e.detail === 2) {
+          e.preventDefault();
+          e.stopPropagation();
+          onExpand();
+        }
+      }}
       className="relative flex h-screen w-screen cursor-move select-none flex-col items-center justify-center"
       style={{
         background: "#101014",
@@ -36,16 +46,6 @@ export function MiniTimer({ task, onExpand }: MiniTimerProps) {
         padding: "2%",
       }}
     >
-      <button
-        type="button"
-        onClick={onExpand}
-        title="Expand"
-        className="absolute right-1.5 top-1.5 flex h-4 w-4 cursor-pointer items-center justify-center rounded text-[10px] leading-none opacity-50 transition-opacity hover:opacity-100"
-        style={{ color: "#A2A2A3", background: "transparent" }}
-      >
-        &#x2922;
-      </button>
-
       <div className="tabular font-bold leading-none tracking-tight text-white" style={{ fontSize: "30px" }}>
         <TimerDigits totalSeconds={task.total_seconds} runningStartedAt={task.running_started_at} />
       </div>

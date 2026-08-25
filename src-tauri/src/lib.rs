@@ -134,6 +134,12 @@ pub fn run() {
             #[cfg(windows)]
             services::toast::register_aumid();
 
+            // Discoverable via Windows Search / Start Menu even if the window is closed by
+            // mistake: idempotent, self-healing on every launch, regardless of where the exe
+            // currently lives.
+            #[cfg(windows)]
+            services::shortcut::ensure_start_menu_shortcut("Unfazed Trace");
+
             // `init()` above only registers the plugin -- it does not itself register a login
             // item. Enabling here (idempotent; a harmless no-op if already enabled) is what
             // actually makes the app launch on login, silently, per Architecture §9.1.

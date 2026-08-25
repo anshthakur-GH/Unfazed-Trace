@@ -4259,6 +4259,7 @@ dependencies = [
  "tauri-plugin-single-instance",
  "tauri-winrt-notification",
  "tokio",
+ "windows",
  "windows-registry",
 ]
 
