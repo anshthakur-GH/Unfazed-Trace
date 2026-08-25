@@ -127,6 +127,8 @@ pub fn run() {
             commands::summary::list_history_dates,
             commands::summary::get_pending_daily_report,
             commands::window::reveal_window,
+            commands::window::enter_mini_mode,
+            commands::window::exit_mini_mode,
         ])
         .setup(|app| {
             #[cfg(windows)]
@@ -144,6 +146,7 @@ pub fn run() {
             let handle = app.handle().clone();
             let conn = db::open(&handle).expect("failed to open database");
             app.manage(std::sync::Mutex::new(conn));
+            app.manage(commands::window::MiniState::default());
 
             let reminder_notify = Arc::new(Notify::new());
             app.manage(SchedulerNotify(reminder_notify.clone()));

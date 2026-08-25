@@ -1,11 +1,16 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { DailyReport } from "./screens/DailyReport";
+import { MiniTimer } from "./components/MiniTimer";
 import { ReviewDialog } from "./components/ReviewDialog";
 import { TaskEditorModal } from "./components/TaskEditorModal";
 import { TaskRow } from "./components/TaskRow";
 import { TodayCounter } from "./components/TodayCounter";
+import { api } from "./lib/ipc";
 import type { Task } from "./lib/types";
 import { useStore } from "./store/useStore";
+
+/** Idle before the window collapses into the mini floating timer. */
+const IDLE_MS = 10_000;
 
 // Lazy-loaded: the review/export screen isn't needed on the widget's default cold-start path.
 const TodaysReview = lazy(() => import("./screens/TodaysReview"));
@@ -57,6 +62,7 @@ function App() {
   const [editorTask, setEditorTask] = useState<Task | null | undefined>(undefined);
   const [reviewTask, setReviewTask] = useState<Task | null>(null);
   const [showTodaysReview, setShowTodaysReview] = useState(false);
+  const [miniMode, setMiniMode] = useState(false);
 
   useEffect(() => {
     void init();
@@ -68,6 +74,52 @@ function App() {
   const doneTasks = useMemo(() => tasks.filter((t) => t.status === "done"), [tasks]);
   const activeTask = activeTasks[0] ?? null;
 
+  const enterMini = useCallback(() => {
+    setMiniMode(true);
+    void api.enterMiniMode();
+  }, []);
+  const exitMini = useCallback(() => {
+    setMiniMode(false);
+    void api.exitMiniMode();
+  }, []);
+
+  // Auto-collapse into the mini floating timer after IDLE_MS of no interaction — but only while
+  // a task is actively running and nothing modal is open. Any pointer/key/scroll/focus resets
+  // the countdown; a window hidden to the tray is skipped so it never pops back up on its own.
+  const idleEnabled =
+    !loading &&
+    !miniMode &&
+    activeTask != null &&
+    editorTask === undefined &&
+    !reviewTask &&
+    !dailyReport &&
+    !showTodaysReview;
+
+  useEffect(() => {
+    if (!idleEnabled) return;
+    let timer: number;
+    const reset = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        if (document.visibilityState === "visible") enterMini();
+      }, IDLE_MS);
+    };
+    const winEvents = ["mousemove", "mousedown", "keydown", "wheel", "touchstart", "focus"] as const;
+    winEvents.forEach((e) => window.addEventListener(e, reset, { passive: true }));
+    document.addEventListener("visibilitychange", reset);
+    reset();
+    return () => {
+      window.clearTimeout(timer);
+      winEvents.forEach((e) => window.removeEventListener(e, reset));
+      document.removeEventListener("visibilitychange", reset);
+    };
+  }, [idleEnabled, enterMini]);
+
+  // If the active task ends (paused/stopped elsewhere) while mini, restore the full window.
+  useEffect(() => {
+    if (miniMode && !activeTask) exitMini();
+  }, [miniMode, activeTask, exitMini]);
+
   const rowActions = {
     onStart: startTask,
     onPause: pauseTask,
@@ -78,6 +130,20 @@ function App() {
 
   if (loading) {
     return <main className="flex min-h-screen items-center justify-center" />;
+  }
+
+  if (miniMode && activeTask) {
+    return (
+      <MiniTimer
+        task={activeTask}
+        onExpand={exitMini}
+        onPause={pauseTask}
+        onStop={(t) => {
+          exitMini();
+          setReviewTask(t);
+        }}
+      />
+    );
   }
 
   return (

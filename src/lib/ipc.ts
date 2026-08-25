@@ -28,6 +28,8 @@ export const api = {
   listHistoryDates: () => invoke<string[]>("list_history_dates"),
   getPendingDailyReport: () => invoke<DaySummary | null>("get_pending_daily_report"),
   revealWindow: () => invoke<void>("reveal_window"),
+  enterMiniMode: () => invoke<void>("enter_mini_mode"),
+  exitMiniMode: () => invoke<void>("exit_mini_mode"),
 };
 
 /** Rust's `AppError` shape, surfaced as the `invoke()` rejection payload. */
