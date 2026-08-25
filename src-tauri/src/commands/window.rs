@@ -1,5 +1,5 @@
 use std::sync::Mutex;
-use tauri::{AppHandle, LogicalSize, Manager, PhysicalPosition, PhysicalSize, State};
+use tauri::{window::Color, AppHandle, LogicalSize, Manager, PhysicalPosition, PhysicalSize, State};
 
 /// Remembers the main window's normal bounds while it's collapsed into the mini floating timer,
 /// so exiting mini mode restores exactly where and how big it was.
@@ -46,6 +46,10 @@ pub fn enter_mini_mode(app: AppHandle, state: State<MiniState>) {
     let _ = window.set_always_on_top(true);
     let _ = window.set_skip_taskbar(true);
     let _ = window.set_size(LogicalSize::new(MINI_W, MINI_H));
+    // WebView2 paints an opaque white backdrop by default; without this, anti-aliasing at the
+    // CSS-rounded corners blends against that white and leaves a faint white fringe even though
+    // the OS window itself is transparent there. Fully transparent removes it.
+    let _ = window.set_background_color(Some(Color(0, 0, 0, 0)));
 
     // Park it in the top-right corner as an always-visible on-screen clock overlay.
     if let Ok(Some(monitor)) = window.current_monitor() {
@@ -73,6 +77,7 @@ pub fn exit_mini_mode(app: AppHandle, state: State<MiniState>) {
     let _ = window.set_always_on_top(false);
     let _ = window.set_skip_taskbar(false);
     let _ = window.set_decorations(true);
+    let _ = window.set_background_color(None);
     let _ = window.set_min_size(Some(LogicalSize::new(NORMAL_MIN_W, NORMAL_MIN_H)));
     let _ = window.set_resizable(true);
 

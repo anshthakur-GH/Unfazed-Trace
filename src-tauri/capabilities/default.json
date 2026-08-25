@@ -4,6 +4,7 @@
   "description": "Least-privilege capability for the main window. Permissions are added per phase as JS APIs are actually used.",
   "windows": ["main"],
   "permissions": [
-    "core:default"
+    "core:default",
+    "core:window:allow-start-dragging"
   ]
 }
