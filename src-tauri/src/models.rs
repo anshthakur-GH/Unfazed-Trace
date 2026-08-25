@@ -71,6 +71,11 @@ pub struct TaskWithNotes {
 pub struct DaySummary {
     /// Local calendar date (YYYY-MM-DD) this summary covers.
     pub date: String,
-    pub total_seconds_today: i64,
+    /// Time tracked on this day (closed sessions started this day; for the live "today"
+    /// summary this also folds in the currently-open session's elapsed-so-far).
+    pub total_seconds: i64,
+    /// Tasks created on this day, in any status — "what was planned/created that day".
+    pub created_tasks: Vec<Task>,
+    /// Tasks completed on this day, each with its review notes — "what was done that day".
     pub done_tasks: Vec<TaskWithNotes>,
 }

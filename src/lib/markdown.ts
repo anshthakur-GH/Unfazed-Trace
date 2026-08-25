@@ -17,9 +17,9 @@ function taskSection(task: TaskWithNotes): string {
 
 /** Renders a day's done tasks + notes as clean Markdown, ready to paste into standup or chat. */
 export function buildDayReviewMarkdown(summary: DaySummary): string {
-  const header = `# Today's review — ${summary.date}\n\nTotal time tracked: ${formatDuration(summary.total_seconds_today)}`;
+  const header = `# Review — ${summary.date}\n\nTotal time tracked: ${formatDuration(summary.total_seconds)}`;
   if (summary.done_tasks.length === 0) {
-    return `${header}\n\nNo tasks completed yet today.`;
+    return `${header}\n\nNo tasks completed this day.`;
   }
   const sections = summary.done_tasks.map(taskSection);
   return [header, ...sections].join("\n\n");

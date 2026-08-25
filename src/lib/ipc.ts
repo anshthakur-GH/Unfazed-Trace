@@ -26,6 +26,8 @@ export const api = {
   getDaySummary: () => invoke<DaySummary>("get_day_summary"),
   getDayReview: (date: string) => invoke<DaySummary>("get_day_review", { date }),
   listHistoryDates: () => invoke<string[]>("list_history_dates"),
+  getPendingDailyReport: () => invoke<DaySummary | null>("get_pending_daily_report"),
+  revealWindow: () => invoke<void>("reveal_window"),
 };
 
 /** Rust's `AppError` shape, surfaced as the `invoke()` rejection payload. */

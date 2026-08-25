@@ -125,6 +125,8 @@ pub fn run() {
             commands::summary::get_day_summary,
             commands::summary::get_day_review,
             commands::summary::list_history_dates,
+            commands::summary::get_pending_daily_report,
+            commands::window::reveal_window,
         ])
         .setup(|app| {
             #[cfg(windows)]

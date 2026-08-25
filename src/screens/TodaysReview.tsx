@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import { DayReportBody } from "../components/DayReportBody";
 import { api, errorMessage } from "../lib/ipc";
-import { formatDuration } from "../lib/format";
+import { formatDayLabel, formatDuration } from "../lib/format";
 import { buildDayReviewMarkdown } from "../lib/markdown";
-import type { DaySummary, NoteKind } from "../lib/types";
+import type { DaySummary } from "../lib/types";
 
 interface TodaysReviewProps {
   /** Live "today" summary from the main store — used as-is while browsing today. */
@@ -10,28 +11,13 @@ interface TodaysReviewProps {
   onClose: () => void;
 }
 
-const NOTE_LABELS: Record<NoteKind, string> = {
-  review: "What I did",
-  blocker: "Blocker",
-  meeting: "For next meeting",
-};
-
-function formatDateLabel(date: string, isToday: boolean): string {
-  if (isToday) return "Today";
-  return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-}
-
 /**
  * Lazy-loaded (Architecture §10): this view is only needed when the user asks for it, so it
  * shouldn't cost anything on the widget's default cold-start path.
  *
- * Doubles as the history browser: every completed task and its notes are already permanent in
- * SQLite (`tasks`/`notes`) -- this view just adds a way to step back through past dates instead
- * of only ever showing today.
+ * The history browser: every created/completed task and its notes are already permanent in
+ * SQLite (`tasks`/`notes`) -- this steps back through past dates, showing what was created and
+ * what was done each day. Rendering is shared with the once-a-day launch report via DayReportBody.
  */
 export default function TodaysReview({ todaySummary, onClose }: TodaysReviewProps) {
   const [historyDates, setHistoryDates] = useState<string[]>([]);
@@ -78,7 +64,6 @@ export default function TodaysReview({ todaySummary, onClose }: TodaysReviewProp
   }
 
   const summary = selectedDate === null ? todaySummary : historicalSummary;
-  const isToday = selectedDate === null;
 
   async function handleCopy() {
     if (!summary) return;
@@ -109,9 +94,11 @@ export default function TodaysReview({ todaySummary, onClose }: TodaysReviewProp
             &larr;
           </button>
           <div>
-            <h2 className="text-base font-semibold">{formatDateLabel(summary?.date ?? todaySummary.date, isToday)}</h2>
+            <h2 className="text-base font-semibold">
+              {formatDayLabel(summary?.date ?? todaySummary.date)}
+            </h2>
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-              {formatDuration(summary?.total_seconds_today ?? 0)} tracked
+              {formatDuration(summary?.total_seconds ?? 0)} tracked
             </p>
           </div>
           <button
@@ -141,42 +128,7 @@ export default function TodaysReview({ todaySummary, onClose }: TodaysReviewProp
             {error}
           </p>
         )}
-        {loading ? null : summary && summary.done_tasks.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-            No tasks completed on this day.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {summary?.done_tasks.map((task) => (
-              <div
-                key={task.id}
-                className="rounded-xl border p-3"
-                style={{ borderColor: "var(--border)", background: "var(--surface)" }}
-              >
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="truncate text-sm font-medium">{task.title}</span>
-                  <span className="tabular shrink-0 text-xs" style={{ color: "var(--text-muted)" }}>
-                    {formatDuration(task.total_seconds)}
-                  </span>
-                </div>
-                {task.notes.length === 0 ? (
-                  <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
-                    No notes recorded.
-                  </p>
-                ) : (
-                  <div className="mt-2 flex flex-col gap-1.5">
-                    {task.notes.map((note) => (
-                      <div key={note.id} className="text-xs">
-                        <span style={{ color: "var(--text-muted)" }}>{NOTE_LABELS[note.kind]}: </span>
-                        <span>{note.body}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        {!loading && summary && <DayReportBody summary={summary} />}
       </div>
 
       <footer className="px-5 py-4">

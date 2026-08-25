@@ -56,6 +56,7 @@ export interface TaskWithNotes extends Task {
 
 export interface DaySummary {
   date: string;
-  total_seconds_today: number;
+  total_seconds: number;
+  created_tasks: Task[];
   done_tasks: TaskWithNotes[];
 }

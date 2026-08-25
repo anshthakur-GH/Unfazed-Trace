@@ -18,6 +18,17 @@ export function formatDuration(totalSeconds: number): string {
   return `${s}s`;
 }
 
+/** "Today" / "Yesterday" / "Mon, Aug 24" for a local "YYYY-MM-DD" date string. */
+export function formatDayLabel(date: string): string {
+  const d = new Date(`${date}T00:00:00`);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diffDays = Math.round((startOfToday.getTime() - d.getTime()) / 86_400_000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+}
+
 /**
  * Live elapsed seconds, derived from timestamps exactly like the Rust `time_math::elapsed_seconds`
  * it mirrors: the cached total plus the running session's duration, if any. Kept in the frontend

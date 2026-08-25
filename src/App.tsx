@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { DailyReport } from "./screens/DailyReport";
 import { ReviewDialog } from "./components/ReviewDialog";
 import { TaskEditorModal } from "./components/TaskEditorModal";
 import { TaskRow } from "./components/TaskRow";
@@ -38,10 +39,12 @@ function App() {
     tasks,
     daySummary,
     daySummaryFetchedAtMs,
+    dailyReport,
     loading,
     error,
     init,
     dismissError,
+    dismissDailyReport,
     createTask,
     updateTask,
     deleteTask,
@@ -84,7 +87,7 @@ function App() {
         style={{ borderColor: "var(--border)" }}
       >
         <TodayCounter
-          totalSecondsToday={daySummary?.total_seconds_today ?? 0}
+          totalSecondsToday={daySummary?.total_seconds ?? 0}
           fetchedAtMs={daySummaryFetchedAtMs}
           activeTask={activeTask}
         />
@@ -168,6 +171,8 @@ function App() {
           <TodaysReview todaySummary={daySummary} onClose={() => setShowTodaysReview(false)} />
         </Suspense>
       )}
+
+      {dailyReport && <DailyReport summary={dailyReport} onClose={dismissDailyReport} />}
     </main>
   );
 }

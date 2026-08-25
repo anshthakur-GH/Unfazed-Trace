@@ -15,12 +15,15 @@ interface StoreState {
   /** When `daySummary` was last fetched — lets the UI back out its live-session
    *  contribution and re-derive a fresh tick without re-fetching every second. */
   daySummaryFetchedAtMs: number;
+  /** The once-a-day catch-up report, if one is pending on this launch (null otherwise). */
+  dailyReport: DaySummary | null;
   loading: boolean;
   error: string | null;
 
   init: () => Promise<void>;
   refresh: () => Promise<void>;
   dismissError: () => void;
+  dismissDailyReport: () => void;
   createTask: (task: NewTaskInput) => Promise<void>;
   updateTask: (task: UpdateTaskInput) => Promise<void>;
   deleteTask: (id: number) => Promise<void>;
@@ -41,6 +44,7 @@ export const useStore = create<StoreState>((set, get) => ({
   tasks: [],
   daySummary: null,
   daySummaryFetchedAtMs: Date.now(),
+  dailyReport: null,
   loading: true,
   error: null,
 
@@ -52,6 +56,18 @@ export const useStore = create<StoreState>((set, get) => ({
     await listen("state-changed", () => {
       void get().refresh();
     });
+    // Once-a-day catch-up: on the first launch of a new day, surface the previous working
+    // day's report and bring the (possibly autostart-hidden) window forward. The command
+    // self-gates to once per calendar day, so this is safe to call on every launch.
+    try {
+      const report = await api.getPendingDailyReport();
+      if (report) {
+        set({ dailyReport: report });
+        await api.revealWindow();
+      }
+    } catch {
+      // A missing/failed report must never block normal startup.
+    }
   },
 
   refresh: () =>
@@ -61,6 +77,7 @@ export const useStore = create<StoreState>((set, get) => ({
     }),
 
   dismissError: () => set({ error: null }),
+  dismissDailyReport: () => set({ dailyReport: null }),
 
   createTask: (task) => guarded(set, async () => { await api.createTask(task); await get().refresh(); }),
   updateTask: (task) => guarded(set, async () => { await api.updateTask(task); await get().refresh(); }),
