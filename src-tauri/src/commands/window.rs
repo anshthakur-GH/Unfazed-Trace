@@ -6,8 +6,8 @@ use tauri::{AppHandle, LogicalSize, Manager, PhysicalPosition, PhysicalSize, Sta
 #[derive(Default)]
 pub struct MiniState(pub Mutex<Option<(PhysicalSize<u32>, PhysicalPosition<i32>)>>);
 
-const MINI_W: f64 = 184.0;
-const MINI_H: f64 = 92.0;
+const MINI_W: f64 = 150.0;
+const MINI_H: f64 = 52.0;
 const NORMAL_MIN_W: f64 = 360.0;
 const NORMAL_MIN_H: f64 = 480.0;
 
@@ -38,23 +38,24 @@ pub fn enter_mini_mode(app: AppHandle, state: State<MiniState>) {
     }
 
     // The main window's configured minimum is larger than the widget; relax it first.
-    let _ = window.set_min_size(Some(LogicalSize::new(140.0, 70.0)));
+    let _ = window.set_min_size(Some(LogicalSize::new(110.0, 42.0)));
     let _ = window.set_resizable(false);
     // Frameless so it reads as a floating pill (Windows 11 rounds the corners for us).
     let _ = window.set_decorations(false);
+    // Float above everything else and stay out of the taskbar, like an on-screen clock overlay.
     let _ = window.set_always_on_top(true);
+    let _ = window.set_skip_taskbar(true);
     let _ = window.set_size(LogicalSize::new(MINI_W, MINI_H));
 
+    // Park it in the top-right corner as an always-visible on-screen clock overlay.
     if let Ok(Some(monitor)) = window.current_monitor() {
         let scale = monitor.scale_factor();
         let mon_pos = monitor.position();
         let mon_size = monitor.size();
         let mini_w = (MINI_W * scale) as i32;
-        let mini_h = (MINI_H * scale) as i32;
         let margin = (16.0 * scale) as i32;
-        let taskbar = (56.0 * scale) as i32; // rough clearance for the Windows taskbar
         let x = mon_pos.x + mon_size.width as i32 - mini_w - margin;
-        let y = mon_pos.y + mon_size.height as i32 - mini_h - taskbar;
+        let y = mon_pos.y + margin;
         let _ = window.set_position(PhysicalPosition::new(x, y));
     }
 
@@ -70,6 +71,7 @@ pub fn exit_mini_mode(app: AppHandle, state: State<MiniState>) {
     };
 
     let _ = window.set_always_on_top(false);
+    let _ = window.set_skip_taskbar(false);
     let _ = window.set_decorations(true);
     let _ = window.set_min_size(Some(LogicalSize::new(NORMAL_MIN_W, NORMAL_MIN_H)));
     let _ = window.set_resizable(true);

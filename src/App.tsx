@@ -120,6 +120,12 @@ function App() {
     if (miniMode && !activeTask) exitMini();
   }, [miniMode, activeTask, exitMini]);
 
+  // Toggle the transparent-window CSS while collapsed into the floating pill.
+  useEffect(() => {
+    document.documentElement.classList.toggle("mini", miniMode);
+    return () => document.documentElement.classList.remove("mini");
+  }, [miniMode]);
+
   const rowActions = {
     onStart: startTask,
     onPause: pauseTask,

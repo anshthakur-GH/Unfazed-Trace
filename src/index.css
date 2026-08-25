@@ -22,6 +22,14 @@ body,
   height: 100%;
 }
 
+/* Mini (floating-pill) mode: make the window see-through so the pill's rounded corners show
+   the desktop behind them. The pill itself paints its own opaque rounded background. */
+html.mini,
+html.mini body,
+html.mini #root {
+  background: transparent !important;
+}
+
 body {
   margin: 0;
   background: var(--bg);
