@@ -40,8 +40,13 @@ pub fn enter_mini_mode(app: AppHandle, state: State<MiniState>) {
     // The main window's configured minimum is larger than the widget; relax it first.
     let _ = window.set_min_size(Some(LogicalSize::new(110.0, 42.0)));
     let _ = window.set_resizable(false);
-    // Frameless so it reads as a floating pill (Windows 11 rounds the corners for us).
+    // Frameless so it reads as a floating pill.
     let _ = window.set_decorations(false);
+    // Windows draws a 1px white border (and its own corner rounding) around undecorated windows
+    // whenever the window shadow is enabled -- that's the "rectangular ghost border" fighting
+    // our own CSS rounding. Disabling it leaves only our rounded div, with true transparency
+    // (below) filling in everywhere outside it.
+    let _ = window.set_shadow(false);
     // Float above everything else and stay out of the taskbar, like an on-screen clock overlay.
     let _ = window.set_always_on_top(true);
     let _ = window.set_skip_taskbar(true);
@@ -77,6 +82,7 @@ pub fn exit_mini_mode(app: AppHandle, state: State<MiniState>) {
     let _ = window.set_always_on_top(false);
     let _ = window.set_skip_taskbar(false);
     let _ = window.set_decorations(true);
+    let _ = window.set_shadow(true);
     let _ = window.set_background_color(None);
     let _ = window.set_min_size(Some(LogicalSize::new(NORMAL_MIN_W, NORMAL_MIN_H)));
     let _ = window.set_resizable(true);

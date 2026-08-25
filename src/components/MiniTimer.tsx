@@ -14,16 +14,18 @@ interface MiniTimerProps {
  * while a task runs. Matches the reference: near-black rounded card, big white tabular clock, and
  * a bold-Poppins "Stay Unfazed" caption (amber accent). Content hugs the edges (~2% padding).
  *
- * The whole pill is a native drag region (`data-tauri-drag-region`) so it can be moved anywhere
- * on screen. Tauri's drag handling swallows the click that would normally follow a plain
- * mousedown+mouseup on a drag region, so "expand" lives on its own small button in the corner
- * instead of "click anywhere" -- buttons are excluded from drag by Tauri itself, so it stays
- * reliably clickable no matter how the rest of the pill is dragged.
+ * The whole pill is a native drag region. `data-tauri-drag-region="deep"` is required (not
+ * "true") -- Tauri only treats a drag-region element as active when it is the *exact* element
+ * under the cursor; "deep" extends that to the whole subtree, so dragging works no matter which
+ * child (digits, caption) you actually click on. Tauri's drag handling swallows the click that
+ * would normally follow a plain mousedown+mouseup on a drag region, so "expand" lives on its own
+ * small button in the corner instead of "click anywhere" -- buttons are excluded from drag by
+ * Tauri itself, so it stays reliably clickable no matter how the rest of the pill is dragged.
  */
 export function MiniTimer({ task, onExpand }: MiniTimerProps) {
   return (
     <div
-      data-tauri-drag-region="true"
+      data-tauri-drag-region="deep"
       title="Drag to move"
       className="relative flex h-screen w-screen cursor-move select-none flex-col items-center justify-center"
       style={{
