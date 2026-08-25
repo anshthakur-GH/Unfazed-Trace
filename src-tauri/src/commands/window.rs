@@ -6,8 +6,8 @@ use tauri::{AppHandle, LogicalSize, Manager, PhysicalPosition, PhysicalSize, Sta
 #[derive(Default)]
 pub struct MiniState(pub Mutex<Option<(PhysicalSize<u32>, PhysicalPosition<i32>)>>);
 
-const MINI_W: f64 = 260.0;
-const MINI_H: f64 = 132.0;
+const MINI_W: f64 = 184.0;
+const MINI_H: f64 = 92.0;
 const NORMAL_MIN_W: f64 = 360.0;
 const NORMAL_MIN_H: f64 = 480.0;
 
@@ -38,8 +38,10 @@ pub fn enter_mini_mode(app: AppHandle, state: State<MiniState>) {
     }
 
     // The main window's configured minimum is larger than the widget; relax it first.
-    let _ = window.set_min_size(Some(LogicalSize::new(200.0, 110.0)));
+    let _ = window.set_min_size(Some(LogicalSize::new(140.0, 70.0)));
     let _ = window.set_resizable(false);
+    // Frameless so it reads as a floating pill (Windows 11 rounds the corners for us).
+    let _ = window.set_decorations(false);
     let _ = window.set_always_on_top(true);
     let _ = window.set_size(LogicalSize::new(MINI_W, MINI_H));
 
@@ -68,6 +70,7 @@ pub fn exit_mini_mode(app: AppHandle, state: State<MiniState>) {
     };
 
     let _ = window.set_always_on_top(false);
+    let _ = window.set_decorations(true);
     let _ = window.set_min_size(Some(LogicalSize::new(NORMAL_MIN_W, NORMAL_MIN_H)));
     let _ = window.set_resizable(true);
 
