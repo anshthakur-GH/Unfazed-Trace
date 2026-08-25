@@ -1,3 +1,4 @@
+import { listen } from "@tauri-apps/api/event";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { DailyReport } from "./screens/DailyReport";
 import { MiniTimer } from "./components/MiniTimer";
@@ -119,6 +120,16 @@ function App() {
   useEffect(() => {
     if (miniMode && !activeTask) exitMini();
   }, [miniMode, activeTask, exitMini]);
+
+  // Clicking the native minimize button converts to the mini pill instead of dropping to the
+  // taskbar (Rust already applied the window transform by the time this fires -- just sync the
+  // view, don't call api.enterMiniMode() again).
+  useEffect(() => {
+    const unlisten = listen("mini-mode-entered", () => setMiniMode(true));
+    return () => {
+      void unlisten.then((f) => f());
+    };
+  }, []);
 
   // Toggle the transparent-window CSS while collapsed into the floating pill.
   useEffect(() => {

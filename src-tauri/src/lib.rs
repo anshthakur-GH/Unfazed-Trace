@@ -15,7 +15,7 @@ use std::time::Duration;
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, WindowEvent,
+    Emitter, Manager, WindowEvent,
 };
 use tokio::sync::Notify;
 
@@ -73,19 +73,20 @@ fn tray_start_last(app: &tauri::AppHandle) {
     }
 }
 
+fn active_task_id(conn: &rusqlite::Connection) -> Option<i64> {
+    conn.query_row("SELECT id FROM tasks WHERE status = 'active' LIMIT 1", [], |r| {
+        r.get(0)
+    })
+    .optional()
+    .unwrap_or(None)
+}
+
 /// "Pause current": pauses whichever task is active, if any.
 fn tray_pause_current(app: &tauri::AppHandle) {
     let db = app.state::<db::Db>();
     let Ok(mut conn) = db.lock() else { return };
 
-    let active: Option<i64> = conn
-        .query_row("SELECT id FROM tasks WHERE status = 'active' LIMIT 1", [], |r| {
-            r.get(0)
-        })
-        .optional()
-        .unwrap_or(None);
-
-    if let Some(id) = active {
+    if let Some(id) = active_task_id(&conn) {
         if pause_task_tx(&mut conn, id).is_ok() {
             drop(conn);
             notify_state_changed(app);
@@ -183,12 +184,37 @@ pub fn run() {
                 }
                 // Closing the window minimizes to tray instead of quitting the app
                 // (Architecture §8.3) -- the process (and its tray icon) stays alive.
+                //
+                // Clicking the native minimize button, while a task is running, converts the
+                // window into the mini floating timer instead of dropping it to the taskbar --
+                // there's no dedicated "minimized" window event, so this is detected via Resized
+                // (Windows reports is_minimized() once the iconify completes) and immediately
+                // un-minimized before applying the same mini-mode transform the 10s-idle path and
+                // double-click-to-expand use, so all three stay in sync via one code path.
                 let window_to_hide = window.clone();
-                window.on_window_event(move |event| {
-                    if let WindowEvent::CloseRequested { api, .. } = event {
+                let window_for_resize = window.clone();
+                let handle_for_resize = handle.clone();
+                window.on_window_event(move |event| match event {
+                    WindowEvent::CloseRequested { api, .. } => {
                         api.prevent_close();
                         let _ = window_to_hide.hide();
                     }
+                    WindowEvent::Resized(_) => {
+                        if !window_for_resize.is_minimized().unwrap_or(false) {
+                            return;
+                        }
+                        let db = handle_for_resize.state::<db::Db>();
+                        let Ok(conn) = db.lock() else { return };
+                        let has_active = active_task_id(&conn).is_some();
+                        drop(conn);
+                        if has_active {
+                            let _ = window_for_resize.unminimize();
+                            let mini_state = handle_for_resize.state::<commands::window::MiniState>();
+                            commands::window::apply_mini_mode(&window_for_resize, &mini_state);
+                            let _ = handle_for_resize.emit("mini-mode-entered", ());
+                        }
+                    }
+                    _ => {}
                 });
             }
 

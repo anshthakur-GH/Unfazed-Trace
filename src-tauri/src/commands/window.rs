@@ -1,8 +1,13 @@
 use std::sync::Mutex;
-use tauri::{window::Color, AppHandle, LogicalSize, Manager, PhysicalPosition, PhysicalSize, State};
+use tauri::{
+    window::Color, AppHandle, LogicalSize, Manager, PhysicalPosition, PhysicalSize, State,
+    WebviewWindow,
+};
 
 /// Remembers the main window's normal bounds while it's collapsed into the mini floating timer,
-/// so exiting mini mode restores exactly where and how big it was.
+/// so exiting mini mode restores exactly where and how big it was. `Some` also doubles as the
+/// "currently mini" flag, guarding against re-entering (and clobbering the remembered bounds)
+/// if triggered twice in a row.
 #[derive(Default)]
 pub struct MiniState(pub Mutex<Option<(PhysicalSize<u32>, PhysicalPosition<i32>)>>);
 
@@ -23,19 +28,21 @@ pub fn reveal_window(app: AppHandle) {
     }
 }
 
-/// Collapse the main window into a small, always-on-top floating timer parked in the
-/// bottom-right corner. Triggered by the frontend after ~10s of no interaction while a task is
-/// actively running, so the running time stays visible while you work in other apps.
-#[tauri::command]
-pub fn enter_mini_mode(app: AppHandle, state: State<MiniState>) {
-    let Some(window) = app.get_webview_window("main") else {
-        return;
-    };
+/// Collapse the main window into a small, always-on-top floating timer parked in the top-right
+/// corner. Called both from the frontend (10s idle while a task runs, or the OS minimize button
+/// -- see `lib.rs`'s Resized handler) so the running time stays visible while you work elsewhere.
+/// A no-op if already mini (see [`MiniState`]).
+pub(crate) fn apply_mini_mode(window: &WebviewWindow, state: &MiniState) {
+    let mut guard = state.0.lock().unwrap();
+    if guard.is_some() {
+        return; // already mini
+    }
 
     // Remember where we were so exit restores it exactly.
     if let (Ok(size), Ok(pos)) = (window.outer_size(), window.outer_position()) {
-        *state.0.lock().unwrap() = Some((size, pos));
+        *guard = Some((size, pos));
     }
+    drop(guard);
 
     // The main window's configured minimum is larger than the widget; relax it first.
     let _ = window.set_min_size(Some(LogicalSize::new(110.0, 42.0)));
@@ -69,6 +76,13 @@ pub fn enter_mini_mode(app: AppHandle, state: State<MiniState>) {
     }
 
     let _ = window.show();
+}
+
+#[tauri::command]
+pub fn enter_mini_mode(app: AppHandle, state: State<MiniState>) {
+    if let Some(window) = app.get_webview_window("main") {
+        apply_mini_mode(&window, &state);
+    }
 }
 
 /// Restore the main window from mini mode back to its previous size, position, and normal
