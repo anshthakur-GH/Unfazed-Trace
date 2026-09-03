@@ -9,6 +9,7 @@ interface TaskRowProps {
   onStop: (task: Task) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: number) => void;
+  onNote: (task: Task) => void;
 }
 
 function ActionButton({
@@ -38,7 +39,7 @@ function ActionButton({
   );
 }
 
-export function TaskRow({ task, onStart, onPause, onStop, onEdit, onDelete }: TaskRowProps) {
+export function TaskRow({ task, onStart, onPause, onStop, onEdit, onDelete, onNote }: TaskRowProps) {
   const isActive = task.status === "active";
   const isPaused = task.status === "paused";
   const isPending = task.status === "pending";
@@ -54,6 +55,14 @@ export function TaskRow({ task, onStart, onPause, onStop, onEdit, onDelete }: Ta
     >
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-medium">{task.title}</div>
+        {task.description && (
+          <div
+            className="mt-0.5 line-clamp-3 whitespace-pre-wrap text-xs"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {task.description}
+          </div>
+        )}
         <div
           className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs"
           style={{ color: "var(--text-muted)" }}
@@ -91,6 +100,8 @@ export function TaskRow({ task, onStart, onPause, onStop, onEdit, onDelete }: Ta
         )}
         {isActive && (
           <>
+            <ActionButton onClick={() => onEdit(task)}>Edit</ActionButton>
+            <ActionButton onClick={() => onNote(task)}>Note</ActionButton>
             <ActionButton variant="neutral" onClick={() => onPause(task.id)}>
               Pause
             </ActionButton>
@@ -101,6 +112,8 @@ export function TaskRow({ task, onStart, onPause, onStop, onEdit, onDelete }: Ta
         )}
         {isPaused && (
           <>
+            <ActionButton onClick={() => onEdit(task)}>Edit</ActionButton>
+            <ActionButton onClick={() => onNote(task)}>Note</ActionButton>
             <ActionButton variant="primary" onClick={() => onStart(task.id)}>
               Resume
             </ActionButton>
@@ -110,7 +123,12 @@ export function TaskRow({ task, onStart, onPause, onStop, onEdit, onDelete }: Ta
           </>
         )}
         {isDone && (
-          <ActionButton onClick={() => onDelete(task.id)}>Delete</ActionButton>
+          <>
+            <ActionButton onClick={() => onEdit(task)}>Edit</ActionButton>
+            <ActionButton variant="danger" onClick={() => onDelete(task.id)}>
+              Delete
+            </ActionButton>
+          </>
         )}
       </div>
     </div>

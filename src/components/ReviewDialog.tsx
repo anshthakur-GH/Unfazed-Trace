@@ -5,6 +5,8 @@ import { TimerDigits } from "./TimerDigits";
 
 interface ReviewDialogProps {
   task: Task;
+  /** "finish" (default) closes out the task via Stop; "note" jots progress while it keeps running. */
+  mode?: "finish" | "note";
   onClose: () => void;
   onSave: (notes: {
     what_i_did: string | null;
@@ -21,11 +23,13 @@ const fieldStyle: React.CSSProperties = {
 };
 
 /**
- * Opening this dialog performs no backend mutation — "Stop" is purely a client-side view
- * change. Only "Save & finish" calls `complete_task`, so Cancel always leaves the task exactly
- * as it was (still ticking if it was active, still paused if it was paused).
+ * Opening this dialog performs no backend mutation on its own — the caller decides what happens
+ * on save. In "finish" mode (default), the parent calls `complete_task`, so Cancel always leaves
+ * the task exactly as it was (still ticking if it was active, still paused if it was paused). In
+ * "note" mode, the parent calls `add_note` per filled field and the task's status/timer is
+ * untouched either way — this is how progress notes get saved while a task is still running.
  */
-export function ReviewDialog({ task, onClose, onSave }: ReviewDialogProps) {
+export function ReviewDialog({ task, mode = "finish", onClose, onSave }: ReviewDialogProps) {
   const [whatIDid, setWhatIDid] = useState("");
   const [blocker, setBlocker] = useState("");
   const [forNextMeeting, setForNextMeeting] = useState("");
@@ -46,6 +50,11 @@ export function ReviewDialog({ task, onClose, onSave }: ReviewDialogProps) {
         className="w-full max-w-sm rounded-t-2xl p-5 sm:rounded-2xl"
         style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
       >
+        {mode === "note" && (
+          <div className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+            Add note
+          </div>
+        )}
         <h2 className="truncate text-base font-semibold">{task.title}</h2>
         <div className="mt-1 text-2xl font-semibold">
           {task.status === "active" ? (
@@ -103,7 +112,7 @@ export function ReviewDialog({ task, onClose, onSave }: ReviewDialogProps) {
             className="rounded-lg px-4 py-2 text-sm font-medium"
             style={{ background: "var(--accent)", color: "var(--accent-ink)" }}
           >
-            Save & finish
+            {mode === "finish" ? "Save & finish" : "Save note"}
           </button>
         </div>
       </form>

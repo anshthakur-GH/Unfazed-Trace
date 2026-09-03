@@ -25,6 +25,7 @@ function Section({ label, tasks, actions }: {
     onStop: (task: Task) => void;
     onEdit: (task: Task) => void;
     onDelete: (id: number) => void;
+    onNote: (task: Task) => void;
   };
 }) {
   if (tasks.length === 0) return null;
@@ -57,11 +58,15 @@ function App() {
     startTask,
     pauseTask,
     completeTask,
+    addTaskNotes,
   } = useStore();
 
   // undefined = closed, null = creating a new task, Task = editing that task.
   const [editorTask, setEditorTask] = useState<Task | null | undefined>(undefined);
   const [reviewTask, setReviewTask] = useState<Task | null>(null);
+  // A task being jotted mid-run via the "Note" button — distinct from reviewTask (Stop) so the
+  // two dialogs never fight over the same piece of state.
+  const [noteTask, setNoteTask] = useState<Task | null>(null);
   const [showTodaysReview, setShowTodaysReview] = useState(false);
   const [miniMode, setMiniMode] = useState(false);
 
@@ -93,6 +98,7 @@ function App() {
     activeTask != null &&
     editorTask === undefined &&
     !reviewTask &&
+    !noteTask &&
     !dailyReport &&
     !showTodaysReview;
 
@@ -143,6 +149,7 @@ function App() {
     onStop: setReviewTask,
     onEdit: setEditorTask,
     onDelete: deleteTask,
+    onNote: setNoteTask,
   };
 
   if (loading) {
@@ -245,6 +252,18 @@ function App() {
           onSave={(notes) => {
             void completeTask(reviewTask.id, notes);
             setReviewTask(null);
+          }}
+        />
+      )}
+
+      {noteTask && (
+        <ReviewDialog
+          task={noteTask}
+          mode="note"
+          onClose={() => setNoteTask(null)}
+          onSave={(notes) => {
+            void addTaskNotes(noteTask.id, notes);
+            setNoteTask(null);
           }}
         />
       )}

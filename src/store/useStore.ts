@@ -4,6 +4,7 @@ import { api, errorMessage } from "../lib/ipc";
 import type {
   DaySummary,
   NewTaskInput,
+  NoteKind,
   ReviewNotesInput,
   Task,
   UpdateTaskInput,
@@ -30,6 +31,9 @@ interface StoreState {
   startTask: (id: number) => Promise<void>;
   pauseTask: (id: number) => Promise<void>;
   completeTask: (id: number, notes: ReviewNotesInput) => Promise<void>;
+  /** Jot progress notes on a task without touching its status or timer — used mid-task, unlike
+   *  `completeTask` which stops the task. Saves one note per non-empty field. */
+  addTaskNotes: (id: number, notes: ReviewNotesInput) => Promise<void>;
 }
 
 async function guarded(set: (partial: Partial<StoreState>) => void, fn: () => Promise<void>) {
@@ -86,4 +90,16 @@ export const useStore = create<StoreState>((set, get) => ({
   pauseTask: (id) => guarded(set, async () => { await api.pauseTask(id); await get().refresh(); }),
   completeTask: (id, notes) =>
     guarded(set, async () => { await api.completeTask(id, notes); await get().refresh(); }),
+  addTaskNotes: (id, notes) =>
+    guarded(set, async () => {
+      const entries: [NoteKind, string | null][] = [
+        ["review", notes.what_i_did],
+        ["blocker", notes.blocker],
+        ["meeting", notes.for_next_meeting],
+      ];
+      for (const [kind, body] of entries) {
+        if (body) await api.addNote({ task_id: id, kind, body });
+      }
+      await get().refresh();
+    }),
 }));
