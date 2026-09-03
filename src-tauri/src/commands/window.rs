@@ -28,7 +28,7 @@ pub fn reveal_window(app: AppHandle) {
     }
 }
 
-/// Collapse the main window into a small, always-on-top floating timer parked in the top-right
+/// Collapse the main window into a small, always-on-top floating timer parked in the bottom-right
 /// corner. Called both from the frontend (10s idle while a task runs, or the OS minimize button
 /// -- see `lib.rs`'s Resized handler) so the running time stays visible while you work elsewhere.
 /// A no-op if already mini (see [`MiniState`]).
@@ -63,15 +63,16 @@ pub(crate) fn apply_mini_mode(window: &WebviewWindow, state: &MiniState) {
     // the OS window itself is transparent there. Fully transparent removes it.
     let _ = window.set_background_color(Some(Color(0, 0, 0, 0)));
 
-    // Park it in the top-right corner as an always-visible on-screen clock overlay.
+    // Park it in the bottom-right corner as an always-visible on-screen clock overlay.
     if let Ok(Some(monitor)) = window.current_monitor() {
         let scale = monitor.scale_factor();
         let mon_pos = monitor.position();
         let mon_size = monitor.size();
         let mini_w = (MINI_W * scale) as i32;
+        let mini_h = (MINI_H * scale) as i32;
         let margin = (16.0 * scale) as i32;
         let x = mon_pos.x + mon_size.width as i32 - mini_w - margin;
-        let y = mon_pos.y + margin;
+        let y = mon_pos.y + mon_size.height as i32 - mini_h - margin;
         let _ = window.set_position(PhysicalPosition::new(x, y));
     }
 
