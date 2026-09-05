@@ -124,8 +124,9 @@ pub fn pause_task(app: AppHandle, db: State<Db>, id: i64) -> Result<Task, AppErr
 }
 
 /// Stop + review, combined into one atomic transaction (Architecture §6.5, §7): closes any
-/// open session, marks the task `done`, and inserts up to three review notes — so a crash
-/// mid-flow can never leave a task "stopped" with no record of why.
+/// open session, marks the task `done`, and upserts up to three review notes (matching whatever
+/// was already saved via mid-task notes, rather than piling on duplicates) — so a crash mid-flow
+/// can never leave a task "stopped" with no record of why.
 #[tauri::command]
 pub fn complete_task(
     app: AppHandle,
@@ -164,11 +165,20 @@ pub fn complete_task(
         ("blocker", blocker),
         ("meeting", for_next_meeting),
     ] {
-        if let Some(body) = body {
-            tx.execute(
-                "INSERT INTO notes (task_id, kind, body, created_at) VALUES (?1, ?2, ?3, ?4)",
-                params![id, kind, body, now],
-            )?;
+        match body {
+            Some(body) => {
+                tx.execute(
+                    "INSERT INTO notes (task_id, kind, body, created_at) VALUES (?1, ?2, ?3, ?4)
+                     ON CONFLICT(task_id, kind) DO UPDATE SET body = excluded.body",
+                    params![id, kind, body, now],
+                )?;
+            }
+            None => {
+                tx.execute(
+                    "DELETE FROM notes WHERE task_id = ?1 AND kind = ?2",
+                    params![id, kind],
+                )?;
+            }
         }
     }
 

@@ -4,6 +4,7 @@ import type {
   NewNoteInput,
   NewTaskInput,
   Note,
+  NoteKind,
   ReviewNotesInput,
   Task,
   UpdateTaskInput,
@@ -23,6 +24,7 @@ export const api = {
   completeTask: (id: number, notes: ReviewNotesInput) =>
     invoke<Task>("complete_task", { id, notes }),
   addNote: (note: NewNoteInput) => invoke<Note>("add_note", { note }),
+  deleteTaskNote: (id: number, kind: NoteKind) => invoke<void>("delete_task_note", { id, kind }),
   listTaskNotes: (id: number) => invoke<Note[]>("list_task_notes", { id }),
   getDaySummary: () => invoke<DaySummary>("get_day_summary"),
   getDayReview: (date: string) => invoke<DaySummary>("get_day_review", { date }),

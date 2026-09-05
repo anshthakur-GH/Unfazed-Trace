@@ -98,7 +98,13 @@ export const useStore = create<StoreState>((set, get) => ({
         ["meeting", notes.for_next_meeting],
       ];
       for (const [kind, body] of entries) {
-        if (body) await api.addNote({ task_id: id, kind, body });
+        if (body) {
+          await api.addNote({ task_id: id, kind, body });
+        } else {
+          // Emptying a field that had a previous note clears it, rather than leaving a stale
+          // saved value the (now-blank) field no longer reflects.
+          await api.deleteTaskNote(id, kind);
+        }
       }
       await get().refresh();
     }),

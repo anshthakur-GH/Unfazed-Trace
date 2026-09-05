@@ -7,7 +7,13 @@ use tauri::Manager;
 /// a connection pool would be unjustified complexity for a single-user desktop app.
 pub type Db = Mutex<Connection>;
 
-const MIGRATIONS: &[(&str, &str)] = &[("0001_init", include_str!("../migrations/0001_init.sql"))];
+const MIGRATIONS: &[(&str, &str)] = &[
+    ("0001_init", include_str!("../migrations/0001_init.sql")),
+    (
+        "0002_notes_unique_per_kind",
+        include_str!("../migrations/0002_notes_unique_per_kind.sql"),
+    ),
+];
 
 /// Opens (creating if needed) `%APPDATA%\UnfazedTrace\unfazed.db`, applies pragmas, and runs
 /// any pending migrations. Also reconciles a session left open by a crash (see
