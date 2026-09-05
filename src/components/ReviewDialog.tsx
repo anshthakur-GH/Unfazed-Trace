@@ -1,6 +1,7 @@
-import { useState } from "react";
-import type { Task } from "../lib/types";
+import { useEffect, useState } from "react";
+import type { Note, NoteKind, Task } from "../lib/types";
 import { formatDuration } from "../lib/format";
+import { api } from "../lib/ipc";
 import { TimerDigits } from "./TimerDigits";
 
 interface ReviewDialogProps {
@@ -22,6 +23,12 @@ const fieldStyle: React.CSSProperties = {
   border: "1px solid var(--border)",
 };
 
+const NOTE_LABELS: Record<NoteKind, string> = {
+  review: "What I did",
+  blocker: "Blocker",
+  meeting: "For next meeting",
+};
+
 /**
  * Opening this dialog performs no backend mutation on its own — the caller decides what happens
  * on save. In "finish" mode (default), the parent calls `complete_task`, so Cancel always leaves
@@ -33,6 +40,25 @@ export function ReviewDialog({ task, mode = "finish", onClose, onSave }: ReviewD
   const [whatIDid, setWhatIDid] = useState("");
   const [blocker, setBlocker] = useState("");
   const [forNextMeeting, setForNextMeeting] = useState("");
+  const [previousNotes, setPreviousNotes] = useState<Note[]>([]);
+
+  // Each Save adds a new note row rather than overwriting the last one, so what was saved
+  // earlier never shows up again in these (intentionally blank) fields -- list it separately
+  // instead, so nothing saved ever looks like it disappeared.
+  useEffect(() => {
+    let cancelled = false;
+    void api.listTaskNotes(task.id).then(
+      (notes) => {
+        if (!cancelled) setPreviousNotes(notes);
+      },
+      () => {
+        // A failed fetch here must never block adding a new note.
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [task.id]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -63,6 +89,28 @@ export function ReviewDialog({ task, mode = "finish", onClose, onSave }: ReviewD
             <span className="tabular">{formatDuration(task.total_seconds)}</span>
           )}
         </div>
+
+        {previousNotes.length > 0 && (
+          <div
+            className="mt-3 max-h-32 overflow-y-auto rounded-lg p-2"
+            style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
+          >
+            <div
+              className="text-xs font-medium uppercase tracking-wider"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Saved so far
+            </div>
+            <div className="mt-1 flex flex-col gap-1">
+              {previousNotes.map((note) => (
+                <div key={note.id} className="text-xs">
+                  <span style={{ color: "var(--text-muted)" }}>{NOTE_LABELS[note.kind]}: </span>
+                  <span>{note.body}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <label className="mt-4 block text-xs" style={{ color: "var(--text-muted)" }}>
           What I did

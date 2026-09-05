@@ -123,6 +123,7 @@ pub fn run() {
             commands::timer::pause_task,
             commands::timer::complete_task,
             commands::notes::add_note,
+            commands::notes::list_task_notes,
             commands::summary::get_day_summary,
             commands::summary::get_day_review,
             commands::summary::list_history_dates,

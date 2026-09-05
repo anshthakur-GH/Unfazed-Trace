@@ -23,6 +23,7 @@ export const api = {
   completeTask: (id: number, notes: ReviewNotesInput) =>
     invoke<Task>("complete_task", { id, notes }),
   addNote: (note: NewNoteInput) => invoke<Note>("add_note", { note }),
+  listTaskNotes: (id: number) => invoke<Note[]>("list_task_notes", { id }),
   getDaySummary: () => invoke<DaySummary>("get_day_summary"),
   getDayReview: (date: string) => invoke<DaySummary>("get_day_review", { date }),
   listHistoryDates: () => invoke<string[]>("list_history_dates"),
